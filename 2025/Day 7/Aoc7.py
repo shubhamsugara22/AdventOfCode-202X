@@ -69,3 +69,81 @@ if __name__ == "__main__":
         lines = [line.rstrip("\n") for line in f]
     result = count_splits(lines)
     print("Total splits:", result)
+
+from typing import List, Set, Tuple
+
+def count_timelines(grid_lines: List[str]) -> int:
+    """
+    Simulate the quantum tachyon manifold and return the total beam strength
+    at the bottom row (number of beams that reach the exit).
+    
+    Key insight: Beams can merge and their strengths accumulate. When beams
+    split at '^', the strength is divided and carried forward.
+    """
+    # Normalize grid
+    grid = [list(line.rstrip("\n")) for line in grid_lines]
+    if not grid:
+        return 0
+    R = len(grid)
+    C = max(len(row) for row in grid) if grid else 0
+    for i in range(R):
+        if len(grid[i]) < C:
+            grid[i].extend([" "] * (C - len(grid[i])))
+
+    # Pad each row to width C
+    for row in grid:
+        while len(row) < C:
+            row.append(" ")
+
+    # Initialize beam strength matrix
+    strength = [[0] * C for _ in range(R)]
+    
+    # Find source 'S' and initialize strength
+    active_cols = set()  # columns with active beams
+    for c in range(C):
+        if grid[0][c] == "S":
+            strength[0][c] = 1
+            active_cols.add(c)
+
+    # Process row by row
+    for y in range(R - 1):
+        next_active_cols = set()
+        
+        for x in active_cols:
+            # Get cell at next row
+            cell = grid[y + 1][x]
+            
+            # Check if cell above is a splitter
+            cell_above = grid[y][x]
+            is_below_splitter = (cell_above == "^")
+            
+            if cell == "^":
+                # This row has a splitter: split the beam left and right
+                left = x - 1
+                right = x + 1
+                
+                if 0 <= left < C:
+                    strength[y + 1][left] += strength[y][x]
+                    next_active_cols.add(left)
+                if 0 <= right < C:
+                    strength[y + 1][right] += strength[y][x]
+                    next_active_cols.add(right)
+            else:
+                # Regular cell or 'S': beam continues if not directly below a splitter
+                if not is_below_splitter:
+                    strength[y + 1][x] += strength[y][x]
+                    next_active_cols.add(x)
+        
+        active_cols = next_active_cols
+
+    # Return sum of strengths at the bottom row (beams reaching exit)
+    return sum(strength[R - 1])
+
+
+if __name__ == "__main__":
+    # change path if your input file is elsewhere
+    path = "input_day_7"
+    with open(path, "r") as f:
+        lines = [line.rstrip("\n") for line in f]
+    result = count_timelines(lines)
+    print("Number of timelines (Part 2):", result)
