@@ -114,3 +114,91 @@ if __name__ == "__main__":
     # change filename if needed
     input_path = "input_day_8"
     solve(input_path)
+
+#!/usr/bin/env python3
+from typing import List, Tuple
+import math
+
+def read_points(path: str) -> List[Tuple[int,int,int]]:
+    pts = []
+    with open(path, "r") as f:
+        for line in f:
+            s = line.strip()
+            if not s:
+                continue
+            x,y,z = map(int, s.split(","))
+            pts.append((x,y,z))
+    return pts
+
+def sqdist(a: Tuple[int,int,int], b: Tuple[int,int,int]) -> int:
+    dx = a[0] - b[0]
+    dy = a[1] - b[1]
+    dz = a[2] - b[2]
+    return dx*dx + dy*dy + dz*dz
+
+def prim_last_edge_xproduct(pts: List[Tuple[int,int,int]]):
+    n = len(pts)
+    if n < 2:
+        raise ValueError("Need at least two points")
+
+    in_tree = [False] * n
+    best_dist = [10**30] * n   # large initial distance
+    parent = [-1] * n
+
+    # start from vertex 0
+    best_dist[0] = 0
+    parent[0] = -1
+
+    # to store the maximum-weight MST edge (squared distance) and its endpoints
+    max_edge_w = -1
+    max_edge_u = -1
+    max_edge_v = -1
+
+    for _ in range(n):
+        # pick next not-in-tree vertex with minimal best_dist
+        u = -1
+        u_dist = 10**30
+        for i in range(n):
+            if not in_tree[i] and best_dist[i] < u_dist:
+                u_dist = best_dist[i]
+                u = i
+        if u == -1:
+            break  # disconnected, shouldn't happen in complete graph
+
+        # add u to the tree
+        in_tree[u] = True
+
+        # if u has a parent (i.e., not the initial root), consider its connecting edge
+        if parent[u] != -1:
+            w = best_dist[u]   # squared distance between parent[u] and u
+            # track maximum MST edge weight and endpoints
+            if w > max_edge_w:
+                max_edge_w = w
+                max_edge_u = parent[u]
+                max_edge_v = u
+
+        # update best_dist for remaining vertices using u as a new tree node
+        for v in range(n):
+            if in_tree[v]:
+                continue
+            d = sqdist(pts[u], pts[v])
+            if d < best_dist[v]:
+                best_dist[v] = d
+                parent[v] = u
+
+    # after MST built, max_edge_u and max_edge_v are the endpoints of the largest MST edge
+    if max_edge_u == -1 or max_edge_v == -1:
+        raise RuntimeError("No MST edge found (unexpected)")
+
+    # multiply X coordinates
+    x_prod = pts[max_edge_u][0] * pts[max_edge_v][0]
+    return x_prod, (max_edge_u, max_edge_v, max_edge_w)
+
+if __name__ == "__main__":
+    input_path = "input_day_8"   # change if needed
+    pts = read_points(input_path)
+    prod, info = prim_last_edge_xproduct(pts)
+    u, v, w = info[0], info[1], info[2]
+    print("Index endpoints:", info[0], info[1])
+    print("Squared distance of that edge:", info[2])
+    print("Product of X coordinates:", prod)
