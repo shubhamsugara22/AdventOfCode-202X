@@ -111,127 +111,45 @@ def solve_day10_part1(filename):
 if __name__ == "__main__":
     print("Day 10 Part 1:", solve_day10_part1("input_day_10"))
 
-## Part 2
+## Part 2 (rewritten)
+# Gonna use this to solve LP
 import re
-import itertools
-import numpy as np
+from pulp import LpMinimize, LpProblem, LpVariable, value, lpSum
+ 
+ 
+ 
+def solve_machine(buttons, joltage): 
+    prob = LpProblem('Machine Problem', LpMinimize)
+    variables = [LpVariable(f"x_{i}", lowBound=0, cat="Integer") for i in range(len(buttons))]
+    prob += lpSum(variables[i] for i in range(len(variables))), "Objective"
+    for i in range(len(joltage)):
+        currVars = []
+        for j in range(len(buttons)):
+            if(i in buttons[j]):
+                currVars.append(variables[j])
+        prob += lpSum(currVars[i] for i in range(len(currVars))) == joltage[i], f"Constraint_{i}"
+        # print(currVars, ",", joltage[i])
+    prob.solve()
+    ans = 0
+    for v in variables:
+        ans += v.value()
+    # print(buttons, joltage)
+    return ans
+ 
+def main(): 
+    ans = 0
+    with open('input_day_10', 'r') as f:
+        for line in f.readlines():
+            button_matches = re.findall(r'\((.*?)\)', line)
+            buttons = [list(map(int, b.split(','))) for b in button_matches]
+ 
+            voltage_match = re.search(r'\{(.*?)\}', line)
+            voltages = list(map(int, voltage_match.group(1).split(','))) if voltage_match else []
+            ans += solve_machine(buttons, voltages)
+    print(ans)
+ 
+ 
+if __name__ == '__main__':
 
+        main()
 
-def parse_line_part2(line):
-    pattern = r"\[(.*?)\](.*)\{(.*?)\}"
-    m = re.match(pattern, line.strip())
-    button_section = m.group(2)
-    target_str = m.group(3)
-
-    buttons = []
-    for part in re.findall(r"\((.*?)\)", button_section):
-        part = part.strip()
-        if not part:
-            buttons.append([])
-        else:
-            buttons.append(list(map(int, part.split(","))))
-
-    targets = list(map(int, target_str.split(",")))
-    return buttons, targets
-
-
-def solve_machine_part2(buttons, target):
-    t = np.array(target, dtype=float)
-    m = len(buttons)
-    n = len(target)
-
-    # Build matrix B: n counters × m buttons
-    B = np.zeros((n, m), float)
-    for j, btn in enumerate(buttons):
-        for bit in btn:
-            B[bit, j] += 1
-
-    # Solve least-squares to get starting integer solution
-    x0 = np.linalg.lstsq(B, t, rcond=None)[0]
-    x0 = np.round(x0).astype(int)
-
-    # Compute nullspace correctly
-    u, s, vh = np.linalg.svd(B, full_matrices=True)
-    tol = 1e-10
-
-    # vh is (m, m)
-    # singular values only exist for min(n, m)
-    null_indices = []
-    for i in range(vh.shape[0]):
-        if i >= len(s) or s[i] < tol:
-            null_indices.append(i)
-
-    nullspace = vh[null_indices, :]
-
-    # Convert each basis vector to integer-ish direction
-    basis = []
-    for v in nullspace:
-        v = np.round(v).astype(int)
-        if np.any(v != 0):
-            basis.append(v)
-
-    # If no nullspace, check direct solution
-    if not basis:
-        if np.all(x0 >= 0) and np.allclose(B @ x0, t):
-            return int(np.sum(x0))
-        else:
-            return float("inf")
-
-    # Search integer combinations
-    best = None
-    SEARCH = range(-20, 21)
-
-    for ks in itertools.product(SEARCH, repeat=len(basis)):
-        x = x0.copy()
-        for k, b in zip(ks, basis):
-            x += k * b
-
-        if np.any(x < 0):
-            continue
-        if np.allclose(B @ x, t):
-            total = int(np.sum(x))
-            if best is None or total < best:
-                best = total
-
-    return best
-
-
-def solve_day10_part2(filename):
-    machines = []
-    with open(filename) as f:
-        lines = f.read().strip().split("\n")
-    
-    i = 0
-    while i < len(lines):
-        if lines[i].startswith("Button A"):
-            ax, ay = map(int, lines[i].split(":")[1].split(","))
-            bx, by = map(int, lines[i+1].split(":")[1].split(","))
-            px, py = map(int, lines[i+2].split(":")[1].split(","))
-            machines.append((ax, ay, bx, by, px + 10000000000000, py + 10000000000000))
-            i += 3
-        i += 1
-    
-    total = 0
-    for (ax, ay, bx, by, px, py) in machines:
-        det = ax * by - ay * bx
-        if det == 0:
-            continue
-        
-        A_num = px * by - py * bx
-        B_num = ax * py - ay * px
-        
-        if A_num % det != 0 or B_num % det != 0:
-            continue
-        
-        A = A_num // det
-        B = B_num // det
-        
-        if A >= 0 and B >= 0:
-            total += 3 * A + B
-    
-    return total
-
-
-
-if __name__ == "__main__":
-    print("Day 10 Part 2:", solve_day10_part2("input_day_10"))
