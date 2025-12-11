@@ -67,3 +67,77 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+## TODO part 2 logic
+from collections import *
+
+with open('input_day_11') as f:
+    lines = f.read().splitlines()
+
+# Build graph
+edges = defaultdict(list)
+nodes = set()
+
+for line in lines:
+    left, *right = line.split()
+    src = left[:-1]
+    edges[src] = right
+    nodes.add(src)
+    for r in right:
+        nodes.add(r)
+
+# Ensure 'out' exists
+edges.setdefault("out", [])
+
+# Build indegree map (fresh copy each time)
+def build_indegrees():
+    indeg = defaultdict(int)
+    for u in edges:
+        for v in edges[u]:
+            indeg[v] += 1
+    return indeg
+
+def solve_part2(start="svr", end="out"):
+    if start not in nodes or end not in nodes:
+        return 0
+
+    indeg = build_indegrees()
+
+    # 3 masks: 0=no special, 1=dac, 2=fft, 3=both
+    dp = {n: [0,0,0,0] for n in nodes}
+
+    start_mask = 0
+    if start == "dac": start_mask |= 1
+    if start == "fft": start_mask |= 2
+
+    dp[start][start_mask] = 1
+
+    # queue for topo BFS
+    q = deque()
+
+    # start's indegree must be 0 to be processed first
+    # but if it's not, we still add it manually
+    q.append(start)
+
+    while q:
+        u = q.popleft()
+
+        # propagate DP to all children
+        for v in edges[u]:
+            # determine mask addition for child
+            add_mask = 0
+            if v == "dac": add_mask |= 1
+            if v == "fft": add_mask |= 2
+
+            for m in range(4):
+                dp[v][m | add_mask] += dp[u][m]
+
+            indeg[v] -= 1
+            if indeg[v] == 0:
+                q.append(v)
+
+    return dp[end][3]   # only paths that visited both
+
+
+# ---------- RUN ----------
+print("Part 2:", solve_part2("svr", "out"))
