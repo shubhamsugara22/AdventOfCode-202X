@@ -207,13 +207,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("=" * 50)
+	fmt.Println(strings.Repeat("=", 50))
 	fmt.Println("PART 1: Initial accessible rolls")
-	fmt.Println("=" * 50)
+	fmt.Println(strings.Repeat("=", 50))
 	fmt.Printf("Accessible rolls: %d\n", part1)
 
-	fmt.Println("\n" + "="*50)
+	fmt.Println("\n" + strings.Repeat("=", 50))
 	fmt.Println("PART 2: Remove rolls iteratively")
-	fmt.Println("=" * 50)
+	fmt.Println(strings.Repeat("=", 50))
 	fmt.Printf("Total rolls removed: %d\n", part2)
 }
