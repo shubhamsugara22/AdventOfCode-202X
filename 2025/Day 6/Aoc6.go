@@ -66,7 +66,15 @@ func solveDay6(filename string) (int, error) {
 		return 0, err
 	}
 
-	lines := strings.Split(string(data), "\n")
+	// Handle both Windows (\r\n) and Unix (\n) line endings
+	content := strings.ReplaceAll(string(data), "\r\n", "\n")
+	lines := strings.Split(content, "\n")
+
+	// Remove empty lines at the end
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+
 	if len(lines) == 0 {
 		return 0, nil
 	}
@@ -149,7 +157,15 @@ func solveDay6Part2(filename string) (int, error) {
 		return 0, err
 	}
 
-	lines := strings.Split(string(data), "\n")
+	// Handle both Windows (\r\n) and Unix (\n) line endings
+	content := strings.ReplaceAll(string(data), "\r\n", "\n")
+	lines := strings.Split(content, "\n")
+
+	// Remove empty lines at the end
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+
 	if len(lines) == 0 {
 		return 0, nil
 	}
